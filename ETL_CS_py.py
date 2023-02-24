@@ -1,10 +1,3 @@
-#%matplotlib inline%
-#from decouple import config
-#USER1= config('user')
-#PASSWORD1= config('password')
-#
-#print(USER1,PASSWORD1)
-
 import findspark
 findspark.init()
 
@@ -21,11 +14,14 @@ import re
 from datetime import datetime
 import mysql.connector as mariadb
 import pyinputplus as pyinput
+#%matplotlib inline
+import fontstyle
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 
+#create spark session
 spark = SparkSession.builder.master("local[*]").appName("Capstone app").getOrCreate()
 
 #Extract data from JSON to DataFrame
@@ -46,10 +42,6 @@ def credit_pandas_extract():
     #Read credit_json file into pandas dataframe
     credit_df_pandas = pd.read_json("json_files/cdw_sapp_credit.json", lines=True)
     return credit_df_pandas
-
-
-
-
 
 
 #Transformation of customer_df according to mapping document
@@ -81,28 +73,35 @@ def customer_transform(customer_df):
     return customer_transform_df
 
 
-
-
 #Transformation of branch_df according to mapping document
 def branch_transform(branch_df):
-   print("Transformation of branch data according to mapping document...")
-   #change the data type of BRANCH_CODE,BRANCH_ZIP,LAST_UPDATED
-   branch_transform_df = branch_df \
-      .withColumn("BRANCH_CODE" ,branch_df["BRANCH_CODE"].cast('int'))   \
-      .withColumn("BRANCH_ZIP",branch_df["BRANCH_ZIP"].cast('int'))    \
-      .withColumn("LAST_UPDATED",branch_df["LAST_UPDATED"].cast('timestamp')) 
+    print("Transformation of branch data according to mapping document...")
+    #change the data type of BRANCH_CODE,BRANCH_ZIP,LAST_UPDATED
+    branch_transform_df = branch_df \
+       .withColumn("BRANCH_CODE" ,branch_df["BRANCH_CODE"].cast('int'))   \
+       .withColumn("BRANCH_ZIP",branch_df["BRANCH_ZIP"].cast('int'))    \
+       .withColumn("LAST_UPDATED",branch_df["LAST_UPDATED"].cast('timestamp')) 
 
-   #change the format of the phone number
-   branch_transform_df = branch_transform_df.withColumn("BRANCH_PHONE", regexp_replace(col("BRANCH_PHONE") ,\
-                         "(\\d{3})(\\d{3})(\\d{4})" , "($1)$2-$3" ) )
+    #change the format of the phone number
+    branch_transform_df = branch_transform_df.withColumn("BRANCH_PHONE", regexp_replace(col("BRANCH_PHONE") ,\
+                          "(\\d{3})(\\d{3})(\\d{4})" , "($1)$2-$3" ) )
 
-   # If source value is null load default value (99999)
-   branch_transform_df = branch_transform_df.na.fill(value=99999,subset=["BRANCH_ZIP"])
-   return branch_transform_df
+    # If source value is null load default value (99999)
+    branch_transform_df = branch_transform_df.na.fill(value=99999,subset=["BRANCH_ZIP"])
+    return branch_transform_df
 
 
+def branch_transform1(branch_df):
+    print("Transformation of branch data according to mapping document...")
+    branch_df.createOrReplaceTempView("branchview")
+    branch_transform_df = spark.sql("SELECT CAST(BRANCH_CODE AS INT), BRANCH_NAME, BRANCH_STREET, BRANCH_CITY, \
+                          BRANCH_STATE, CAST(IF(BRANCH_ZIP IS NULL, '99999', BRANCH_ZIP) AS INT) AS BRANCH_ZIP, \
+                          CONCAT('(', SUBSTR(BRANCH_PHONE, 1, 3), ')', SUBSTR(BRANCH_PHONE, 4,3), '-', SUBSTR(BRANCH_PHONE, 7, 4)) AS BRANCH_PHONE, \
+                          CAST(LAST_UPDATED AS TIMESTAMP) FROM BRANCHVIEW")
+    return branch_transform_df
 
 #Transformation of credit_df according to mapping document - pandas
+
 def credit_transform(credit_df_pandas):
     print("Transformation of credit data according to mapping document...")
     #change the data type of DAY,MONTH,YEAR
@@ -131,11 +130,8 @@ def credit_transform(credit_df_pandas):
 
     return credit_transform_df
 
-
-
-
-
 #Data loading into Database
+
 def branch_load(branch_transform_df):
        print("Loading transformed branch data into Database...")
        branch_transform_df.write.format("jdbc") \
@@ -181,45 +177,43 @@ def customer_load(customer_transform_df):
         .save()
 
 
-
-
-if __name__ == "__main__":
+if __name__ == "__main__":      
     # Log that you have started the ETL process
-    print("ETL Job Started")
-    
+    print("ETL Job Started \n")
+
     # Log that you have started the Extract step
-    print("Extract phase Started")
-    
+    print("Extract phase Started \n\n")
+
     # Call the Extract function
     extracted_customer_data = customer_extract()
     extracted_branch_data = branch_extract()
     extracted_credit_data = credit_pandas_extract()
-    
+
     # Log that you have completed the Extract step
-    print("Extract phase Ended")
-    
+    print("Extract phase Ended \n")
+
     # Log that you have started the Transform step
-    print("Transform phase Started")
-    
+    print("Transform phase Started \n\n")
+
     # Call the Transform function
     customer_transformed_data = customer_transform(extracted_customer_data)
     branch_transformed_data = branch_transform(extracted_branch_data)
     credit_transformed_data = credit_transform(extracted_credit_data)
-    
+
     # Log that you have completed the Transform step
-    print("Transform phase Ended")
-    
+    print("Transform phase Ended \n")
+
     # Log that you have started the Load step
-    print("Load phase Started")
-    
+    print("Load phase Started \n\n")
+
     # Call the Load function
     customer_load(customer_transformed_data)
     branch_load(branch_transformed_data)
     credit_load(credit_transformed_data)
-    
-    
+
+
     # Log that you have completed the Load step
-    print("Load phase Ended")
-    
+    print("Load phase Ended \n")
+
     # Log that you have completed the ETL process
-    print("ETL Job Ended")
+    print("ETL Job Ended \n\n")
