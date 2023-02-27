@@ -141,8 +141,8 @@ def credit_transform(credit_df_pandas):
 
     return credit_transform_df
 
-#Data loading into Database
 
+#Data loading into Database
 def branch_load(branch_transform_df):
        print("\tLoading transformed branch data into Database...")
        branch_transform_df.write.format("jdbc") \
@@ -201,13 +201,8 @@ def loan_load(loan_df):
     .option("useUnicode", "True") \
     .save()
     
+
 #Functional Requirements - Application Front-End
-
-
-#Transaction Details Module
-
-#display the transactions made by customers living in agiven zip code for a given month and year.
-#  Order by day in descending order
 
 #load from database
 def load_branch_from_db():
@@ -236,6 +231,7 @@ def load_customer_from_db():
                                      dbtable="creditcard_capstone.CDW_SAPP_CUSTOMER").load()
     return customer_df
 
+
 def load_loan_from_db():
     loan_df=spark.read.format("jdbc").options(driver="com.mysql.cj.jdbc.Driver",\
                                      user=username,\
@@ -243,6 +239,7 @@ def load_loan_from_db():
                                      url="jdbc:mysql://localhost:3306/companyabc_db",\
                                      dbtable="creditcard_capstone.CDW_SAPP_loan_application").load()
     return loan_df
+
 
 #create view from Spark DataFrame
 def create_branch_view():
@@ -371,6 +368,8 @@ def validate_state_common(state):
 def validate_country(country):
     return True if country.lower() == 'united states' else False
 
+
+#Transaction Details Module
 #display the transactions made by customers living in a given zip code for a given month and year.
 #  Order by descending order.
 def transaction_for_zipcode():
@@ -395,9 +394,7 @@ def transaction_for_zipcode():
 
 #display the number and total values of transactions for a given type.
 def transaction_value_by_number():
-
     creditview= create_credit_view()
-
     #get unique transaction type list
     tr_type_query = f"select distinct(TRANSACTION_TYPE) from creditview"
     tr_type_df= spark.sql(tr_type_query)
@@ -415,7 +412,6 @@ def transaction_value_by_number():
 
 #display the number and total values of transactions for branches in a given state
 def transaction_branch_state():
-
     creditview= create_credit_view()
     branchview = create_branch_view()
     #get state list
@@ -433,11 +429,10 @@ def transaction_branch_state():
     query= f"SELECT branch.BRANCH_CODE,count(TRANSACTION_ID),round(sum(TRANSACTION_VALUE),2) as TRANSACTIONS FROM branchview \
              AS branch INNER JOIN creditview AS credit ON branch.BRANCH_CODE = credit.BRANCH_CODE \
              WHERE BRANCH_STATE= '{state_input}' group by branch.BRANCH_CODE"
-
     spark.sql(query).show()	
 
-# Customer Details Module
 
+# Customer Details Module
 #check the existing account details of a customer.
 def account_details():
     customerview = create_customer_view()
@@ -591,7 +586,6 @@ def monthly_bill():
                       WHERE MONTH(to_date(TIMEID, 'yyyyMMdd')) = {month_input} AND \
                       YEAR(to_date(TIMEID, 'yyyyMMdd')) = {year_input} and CUST_CC_NO={credit_card_input} \
                       GROUP BY CUST_CC_NO"
-    print(query)
     spark.sql(query).show()
 
 
@@ -609,17 +603,16 @@ def transactions_by_dates():
                 AND cust_cc_no = {credit_card_input} ORDER BY \
                 YEAR(to_date(TIMEID, 'yyyyMMdd')) DESC, MONTH(to_date(TIMEID, 'yyyyMMdd')) DESC, \
                 DAY(to_date(TIMEID, 'yyyyMMdd')) DESC"
-        print(query)
         spark.sql(query).show()
 
 
 #Data analysis and Visualization
 
-def load_to_pandas(branch_df,credit_df,customer_df):
-    branch_df_pandas = branch_df.toPandas()
-    credit_df_pandas = credit_df.toPandas()
-    customer_df_pandas = customer_df.toPandas()
-    return (branch_df_pandas,credit_df_pandas,customer_df_pandas)
+# def load_to_pandas(branch_df,credit_df,customer_df):
+    # branch_df_pandas = branch_df.toPandas()
+    # credit_df_pandas = credit_df.toPandas()
+    # customer_df_pandas = customer_df.toPandas()
+    # return (branch_df_pandas,credit_df_pandas,customer_df_pandas)
 
 # load data to pandas dataframe
 def load_to_branch_pandas():
@@ -632,17 +625,19 @@ def load_to_credit_pandas():
     credit_df_pandas = credit_df.toPandas()
     return credit_df_pandas
 
-def load_to_customer_pandas(customer_df):
+def load_to_customer_pandas():
     customer_df = load_customer_from_db()
     customer_df_pandas = customer_df.toPandas()
-    return (customer_df_pandas)
+    return customer_df_pandas
 
 #plot which transaction type has a high rate of transactions
 def high_transaction_rate_type():
     credit_df_pandas = load_to_credit_pandas()
     tr_rate_df = credit_df_pandas[["TRANSACTION_TYPE","TRANSACTION_ID"]]
     tr_rate_df = tr_rate_df.groupby('TRANSACTION_TYPE')["TRANSACTION_ID"].count().sort_values(ascending = False)
-    tr_rate_df.reset_index(inplace = True)
+    #clrs = ['grey' if (x < max(values)) else 'red' for x in values ]
+    # clrs= ['grey' if(x< max(tr_rate_df['TRANSACTION_ID'])) else 'SteelBlue' for x in tr_rate_df['TRANSACTION_ID']]
+    # #tr_rate_df.reset_index(inplace = True)
     tr_rate_df.plot(x = "TRANSACTION_TYPE", y="TRANSACTION_ID", kind = "bar",color='SteelBlue',figsize=(6, 4),bottom = 0.355)
     plt.xlabel("Transaction Type")
     plt.ylabel("Transaction ID")
@@ -660,13 +655,15 @@ def high_customers_state():
     st_cust_df = customer_df_pandas[["CUST_STATE","CREDIT_CARD_NO"]]
     st_cust_df = st_cust_df.groupby(['CUST_STATE']).count()
     st_cust_df.reset_index(inplace = True)
-    st_cust_df.head()
-    st_cust_df.plot(x = "CUST_STATE", y="CREDIT_CARD_NO", kind = "bar",color='SteelBlue',figsize=(6, 4))
+    st_cust_df.plot(kind='line', x = "CUST_STATE", y="CREDIT_CARD_NO", figsize=(10, 4),marker = 'o',linewidth = 3,grid = True) # pass a tuple (x, y) size
+    # st_cust_df.plot(x = "CUST_STATE", y="CREDIT_CARD_NO", kind = "bar",color='SteelBlue',figsize=(6, 4))
     plt.xlabel("State")
     plt.ylabel("Customers")
     plt.title("State with high number of customers")
     plt.grid(linestyle='dashed', axis="both",zorder=0.99,alpha = 0.15)
-    plt.yticks(list(range(0,140,20)))
+    # plt.yticks(list(range(0,140,20)))
+    state_list = st_cust_df.index.to_list()
+    plt.xticks(state_list)
     plt.show()
 
 #sum of all transactions for the top 10 customers,and which customer has the highest transaction amount.
@@ -742,8 +739,7 @@ def approved_self_employeed():
          )
     plt.title('Percentage of applications approved for self-employed applicants', y=1.12) 
     plt.legend(labels=label_value, bbox_to_anchor=(1.5,1.1),loc='upper right')
-
-plt.show()
+    plt.show()
 
 #percentage of rejection for married male applicants.
 def married_male_applicants_rejection():
@@ -763,6 +759,20 @@ def married_male_applicants_rejection():
            )
     plt.title('            percentage of rejection for married male applicants                ', y=1.12) 
     plt.legend(labels=label_value, bbox_to_anchor=(1.5,1.025),loc='upper right') 
+    plt.show()
+
+
+#which branch processed the highest total dollar value of healthcare transactions.
+def branch_highest_healthcare_tr():
+    credit_df_pandas = load_to_credit_pandas() 
+    high_health_df = credit_df_pandas[credit_df_pandas["TRANSACTION_TYPE"]=="Healthcare"].groupby("BRANCH_CODE")\
+                    .sum()["TRANSACTION_VALUE"].sort_values(ascending=False).head(10)
+    high_health_df.plot(x=high_health_df.index, y = high_health_df.values,kind = "bar",figsize=(6,4))
+    plt.xlabel("BRANCH CODE")
+    plt.ylabel("TRANSACTION Amount")
+    plt.title("Branch code with highest total value for Healthcare")
+    plt.show()
+    
 
 
 def function_before_exiting():
@@ -878,11 +888,11 @@ def data_visualization_menu():
         elif user_choice == 4:
             approved_self_employeed()
         elif user_choice == 5:
-            married_male_applicants_rejection
+            married_male_applicants_rejection()
         elif user_choice == 6:
             three_months_largest_transaction()
         elif user_choice == 7:
-            transactions_by_dates()
+            branch_highest_healthcare_tr()
         elif user_choice == 8:
             print(fontstyle.apply("\n\tExiting from Customer Details.....",'Italic'))
             break
