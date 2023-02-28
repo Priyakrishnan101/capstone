@@ -690,12 +690,6 @@ def transactions_by_dates():
 
 #Data analysis and Visualization
 
-# def load_to_pandas(branch_df,credit_df,customer_df):
-    # branch_df_pandas = branch_df.toPandas()
-    # credit_df_pandas = credit_df.toPandas()
-    # customer_df_pandas = customer_df.toPandas()
-    # return (branch_df_pandas,credit_df_pandas,customer_df_pandas)
-
 # load data to pandas dataframe
 def load_to_branch_pandas():
     branch_df = load_branch_from_db()
@@ -1024,53 +1018,53 @@ def data_visualization_menu():
 
 
 if __name__ == "__main__":      
-    # print(fontstyle.apply(" \t\t CAPSTONE PROJECT \n\n",'bold/UNDERLINE'))
+    print(fontstyle.apply(" \t\t CAPSTONE PROJECT \n\n",'bold/UNDERLINE'))
 
-    # print("\tCREDITCARD SYSTEM \n\n")
-    # # Log that you have started the ETL process
-    # print("\tETL Job Started \n")
+    print("\tCREDITCARD SYSTEM \n\n")
+    # Log that you have started the ETL process
+    print("\tETL Job Started \n")
 
-    # # Log that you have started the Extract step
-    # print("\tExtract phase Started \n")
+    # Log that you have started the Extract step
+    print("\tExtract phase Started \n")
 
-    # # Call the Extract function
-    # extracted_customer_data = customer_extract()
-    # extracted_branch_data = branch_extract()
-    # extracted_credit_data = credit_pandas_extract()
+    # Call the Extract function
+    extracted_customer_data = customer_extract()
+    extracted_branch_data = branch_extract()
+    extracted_credit_data = credit_pandas_extract()
 
-    # #xLog that you have completed the Extract step
-    # print("\n\tExtract phase Ended")
+    #xLog that you have completed the Extract step
+    print("\n\tExtract phase Ended")
 
-    # # Log that you have started the Transform step
-    # print("\n\tTransform phase Started \n")
+    # Log that you have started the Transform step
+    print("\n\tTransform phase Started \n")
 
-    # # Call the Transform function
-    # customer_transformed_data = customer_transform(extracted_customer_data)
-    # branch_transformed_data = branch_transform(extracted_branch_data)
-    # credit_transformed_data = credit_transform(extracted_credit_data)
+    # Call the Transform function
+    customer_transformed_data = customer_transform(extracted_customer_data)
+    branch_transformed_data = branch_transform(extracted_branch_data)
+    credit_transformed_data = credit_transform(extracted_credit_data)
 
-    # # Log that you have completed the Transform step
-    # print("\tTransform phase Ended \n")
+    # Log that you have completed the Transform step
+    print("\tTransform phase Ended \n")
 
-    # # Log that you have started the Load step
-    # print("\tLoad phase Started \n")
+    # Log that you have started the Load step
+    print("\tLoad phase Started \n")
 
-    # # Call the Load function
-    # customer_load(customer_transformed_data)
-    # branch_load(branch_transformed_data)
-    # credit_load(credit_transformed_data)
+    # Call the Load function
+    customer_load(customer_transformed_data)
+    branch_load(branch_transformed_data)
+    credit_load(credit_transformed_data)
 
 
-    # # Log that you have completed the Load step
-    # print("\n\tLoad phase Ended \n")
+    # Log that you have completed the Load step
+    print("\n\tLoad phase Ended \n")
 
-    # # Log that you have completed the ETL process
-    # print("\tETL Job Ended \n")
+    # Log that you have completed the ETL process
+    print("\tETL Job Ended \n")
 
-    # #loan-api-module
-    # print ("\n\tLOAN application Data API")
-    # loan_df= loan_app()
-    # loan_load(loan_df)
+    #loan-api-module
+    print ("\n\tLOAN application Data API")
+    loan_df= loan_app()
+    loan_load(loan_df)
 
     main_menu()
 
