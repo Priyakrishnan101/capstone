@@ -19,7 +19,7 @@ d)API Endpoint: https://raw.githubusercontent.com/platformps/LoanDataset/main/lo
 Python is the main language used to complete the project. The libraries used to perform ETL are Pandas and Pyspark.Data was transformed from json format to table format using Pyspark. These tables are explored using Pandas and Pyspark to gain an understanding of the data and transformed according to the mapping document provided. Pyspark was then used to build the ETL pipeline. The data sources provided have been cleaned, transformed to create new features and then saved as the data tables. Also the data is read from the database, and plotted into graphs using python library Matplotlib.
 
 ## ETL Flow Diagram ##
-![Project Flow Diagram](project_flow_diagram.jpg)
+![Project Flow Diagram](/images/Project_flow_diagram.jpg)
 
 ## 1.Extract Data ##
 The CDW_SAPP_CUSTOMER.JSON,CDW_SAPP_BRANCH.JSON files are extracted into Spark DataFrames and CDW_SAPP_BRANCH.JSON is extracted into Pandas DataFrame. The Loan application Data API is accessed using REST
