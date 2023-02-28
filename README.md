@@ -42,12 +42,17 @@ API by sending an HTTP request and processing the response.
  ## 4. Loading ##
  After transformation data is loaded into MariaDB using SparkSQL connection. Also used python database connectivity for customer modification module.
 
- ## 5. Data Viualizatio ##
+ ## 5. Data Viualization ##
  Data is read from database usig spark SQL read.format. The data is loaded into pandas dataframe and used Matplotlib for platting the graph.
 
 ## GRAPHS ##
-![Top 10 Customer with High Transaction](top-10-cust.jpg)
-![State with high Transaction](state.jpg)
+![Transaction Type With Higgh Rate OF Transactions](/images/1-High_tr_rate.jpg)
+![State with high Transactions](/images/2-state-with-high-cust.jpg)
+![Transaction Total For Top 10 Customer,Top Customer](/images/3-Top-10-cust.jpg)
+![Percentage Of Approved Self Employeed Applicants](/images/4-approved-self-emp.jpg)
+![Percentage Of Married Male Rejection](/images/5-married-male-rej.jpg)
+![Top Three Months With Largest Transaction Data](/images/6-top-3-months.jpg)
+![Healthcare Branch With High Transaction Value](/images/7-healthcare-branch.jpg)
 
 ## Technologies Used ##
 - Python 3.10
