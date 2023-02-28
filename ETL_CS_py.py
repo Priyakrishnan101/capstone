@@ -39,7 +39,12 @@ def credit_extract():
 def credit_pandas_extract():
     print("\tExtraxting credit data...")
     #Read credit_json file into pandas dataframe
-    credit_df_pandas = pd.read_json("json_files/cdw_sapp_credit.json", lines=True)
+    credit_df_pandas = None
+    try:
+        credit_df_pandas = pd.read_json("json_files/cdw_sapp_credit.json", lines=True)
+    except Exception as e:
+        print(f"Exception in credit_pandas_extract: {e}")
+        raise Exception(e)    
     return credit_df_pandas
 
 #Loan Application Data - Module
@@ -190,7 +195,7 @@ def customer_load(customer_transform_df):
 
 
 def loan_load(loan_df):
-    print("\n\t Loading loan data into Database....")
+    print("\n\tLoading loan data into Database....")
     loan_df.write.format("jdbc") \
     .mode("append") \
     .option("url", "jdbc:mysql://localhost:3306/creditcard_capstone") \
@@ -265,7 +270,7 @@ def common_validator(display_text_user, validator_method):
         if is_valid_input:
             return user_input_value
         else:
-            print('Invalid input')
+            print('\tInvalid input')
             is_valid_input = True
             
 #Transaction type (to check in the transaction type list) validator
@@ -277,7 +282,7 @@ def tr_type_validator(display_text_user, validator_method,validator_list):
         if is_valid_input:
             return user_input_value
         else:
-            print('Invalid input')
+            print('\tInvalid input')
             is_valid_input = True
 
 # State (to check from the branch state list) validator
@@ -289,7 +294,7 @@ def state_validator(display_text_user, validator_method,validator_list):
         if is_valid_input:
             return user_input_value
         else:
-            print('Invalid input')
+            print('\tInvalid input')
             is_valid_input = True
 
 #First name,Middle name and last name validator
@@ -304,30 +309,30 @@ def name_validator(display_text_user, validator_method,variable):
         if is_valid_input:
             return user_input_value
         else:
-            print('Invalid input')
+            print('\tInvalid input')
             is_valid_input = True
 
 # Home number and street address validator
 def street_validator(validator_method):
     is_valid_input = True
     while is_valid_input:
-        home_no = input("Please enter home or APT number: ")
-        street_address = input("Please enter street address: ").title()
+        home_no = input("\tPlease enter home or APT number: ")
+        street_address = input("\tPlease enter street address: ").title()
         user_input_value = home_no +','+ street_address
         is_valid_input = validator_method(home_no,street_address)
         if is_valid_input:
             return user_input_value
         else:
-            print('Invalid input')
+            print('\tInvalid input')
             is_valid_input = True
 
 
 def validate_zip_code(zip_code):
-    pattern = r'^\d{5}'
+    pattern = r'\b\d{5}\b'
     return bool(re.match(pattern, str(zip_code)))
 
 def validate_month(month):
-    return True if month.isnumeric() and int(month) in list(range(1,13)) else False
+    return True if month.isnumeric() and int(month) in list(range(1,13))  and len(month) > 0 and  len(month) <3 else False
 
 def validate_year(year):
     return True if year.isnumeric() and int(year)==2018 else False
@@ -362,11 +367,15 @@ def validate_city(city):
     return bool(re.match(pattern, str(city)))
 
 def validate_state_common(state):
-    pattern = r"[A-Za-z]{2}"
+    pattern = r"^[A-Za-z]{2}$"
     return bool(re.match(pattern, str(state)))
 
 def validate_country(country):
     return True if country.lower() == 'united states' else False
+
+def validate_date(input_date):
+    pattern = r"^2018-\d{2}-\d{2}$$"
+    return bool(re.match(pattern, str(input_date)))
 
 
 #Transaction Details Module
@@ -426,9 +435,9 @@ def transaction_branch_state():
                 #  FROM cdw_sapp_branch AS branch INNER JOIN cdw_sapp_credit_card AS credit \
                 #  ON branch.BRANCH_CODE = credit.BRANCH_CODE WHERE branch_state= '{state}' \
                 #  GROUP BY credit.TRANSACTION_ID GROUP BY branch.branch_code"
-    query= f"SELECT branch.BRANCH_CODE,count(TRANSACTION_ID),round(sum(TRANSACTION_VALUE),2) as TRANSACTIONS FROM branchview \
+    query= f"SELECT count(TRANSACTION_ID) as NUMBER_OF_TRANSACTIONS,round(sum(TRANSACTION_VALUE),2) as TOTAL_RANSACTIONS FROM branchview \
              AS branch INNER JOIN creditview AS credit ON branch.BRANCH_CODE = credit.BRANCH_CODE \
-             WHERE BRANCH_STATE= '{state_input}' group by branch.BRANCH_CODE"
+             WHERE BRANCH_STATE= '{state_input}' group by branch.BRANCH_NAME"
     spark.sql(query).show()	
 
 
@@ -437,14 +446,14 @@ def transaction_branch_state():
 def account_details():
     customerview = create_customer_view()
     #check the existing account details of a customer.
-    cc_no_input = common_validator("Enter 16-digit credit card number: ", validate_cc_no)
+    cc_no_input = common_validator("\tEnter 16-digit credit card number: ", validate_cc_no)
 
     query= f"SELECT concat(FIRST_NAME,' ',MIDDLE_NAME,' ',LAST_NAME) as FULL_NAME,\
              FULL_STREET_ADDRESS,CUST_CITY as CITY, CUST_STATE as STATE,\
              CUST_COUNTRY as COUNTRY,CUST_ZIP as ZIP_CODE,CUST_PHONE as PHONE_NUMBER,CUST_EMAIL as EMAIL\
              from customerview where CREDIT_CARD_NO = '{cc_no_input}'"
 
-    spark.sql(query).show()
+    spark.sql(query).show(truncate = False)
     return cc_no_input
 
 #Display customer details given the credit_card_number
@@ -454,7 +463,7 @@ def customer_display(cc_no_input):
           FULL_STREET_ADDRESS,CUST_CITY as CITY, CUST_STATE as STATE,\
           CUST_COUNTRY as COUNTRY,CUST_ZIP as ZIP_CODE,CUST_PHONE as PHONE_NUMBER,CUST_EMAIL as EMAIL\
           from customerview where CREDIT_CARD_NO = '{cc_no_input}'"
-    spark.sql(query).show()
+    spark.sql(query).show(truncate = False)
 
 
 #Establish Database connectivity and update
@@ -473,114 +482,123 @@ def modify_customer():
     #check the existing account details of a customer.
     acc_no = account_details()
     #Get user input
-    print('''Enter choice from below to update:
-             1.Update First Name
-             2.Update Last Name
-             3.Update Middle Name
-             4.Update phone Number
-             5.Update Email
-             6.Update Full_Street_Address
-             7.Update city
-             8.Update state
-             9.Update Contry
-             10.Update Zip_Code
-             11.Display 
-             12.Exit''')
     while True:
-        user_choice = pyinput.inputInt("Please enter your choice from option 1 to 13:")
+        print('''\n\tEnter choice from below to update:
+         1.Update First Name
+         2.Update Last Name
+         3.Update Middle Name
+         4.Update phone Number
+         5.Update Email
+         6.Update Full_Street_Address
+         7.Update city
+         8.Update state
+         9.Update Contry
+         10.Update Zip_Code
+         11.Display 
+         12.Exit''')
+        user_choice = pyinput.inputInt("\tPlease enter your choice from option 1 to 12:")
         if str(user_choice).isspace():
             print(" Invalid user choice ")
             user_choice = 0
 
         elif int(user_choice) in list(range(1,13)) ==False:
-            print("Invalid user choice ")
+            print("\tInvalid user choice ")
             user_choice=0
 
         elif int(user_choice) == 1:
             update_query_variable = "FIRST_NAME"
-            display_text = "Enter First Name: "
+            display_text = "\tEnter First Name: "
             first_name_input = name_validator(display_text,validate_name,update_query_variable)
             update_customer(update_query_variable,first_name_input,acc_no)
-            print("Updated First Name!")
+            print("\n\tUpdated First Name!")
 
         elif int(user_choice) == 2:
             update_query_variable = "LAST_NAME"
-            display_text = "Enter Last Name: "
+            display_text = "\tEnter Last Name: "
             last_name_input = name_validator(display_text,validate_name,update_query_variable)
             update_customer(update_query_variable,last_name_input,acc_no)
-            print("Updated Last Name!")
+            print("\n\tUpdated Last Name!")
 
         elif int(user_choice) == 3:
             update_query_variable = "MIDDLE_NAME"
-            display_text = "Enter Middle Name: "
+            display_text = "\tEnter Middle Name: "
             middle_name_input = name_validator(display_text,validate_name,update_query_variable)
             update_customer(update_query_variable,middle_name_input,acc_no)
-            print("Updated Middle Name!")
+            print("\n\tUpdated Middle Name!")
 
         elif int(user_choice) == 4:
             update_query_variable = "CUST_PHONE"
-            display_text = "Enter 10 digit phone number: "
+            display_text = "\tEnter 10 digit phone number: "
             phone_no_input = common_validator(display_text,validate_ph_no)
             phone_no_input= f"({phone_no_input[:3]}){phone_no_input[3:6]}-{phone_no_input[6:10]}"
             update_customer(update_query_variable,phone_no_input,acc_no)
-            print("Updated Phone Number!")
+            print("\n\tUpdated Phone Number!")
 
         elif int(user_choice) == 5:
             update_query_variable = "CUST_EMAIL"
-            display_text = "Enter Email-id: "
+            display_text = "\tEnter Email-id: "
             email_input = common_validator(display_text,validate_email)
             update_customer(update_query_variable,email_input,acc_no)
-            print("Updated Email-id!")
+            print("\n\tUpdated Email-id!")
 
         elif int(user_choice) == 6:
             update_query_variable = "FULL_STREET_ADDRESS"
             street_input = street_validator(validate_street)
             update_customer(update_query_variable,street_input,acc_no)
-            print("Updated Full Street Address!")
+            print("\n\tUpdated Full Street Address!")
 
         elif int(user_choice) == 7:
             update_query_variable = "CUST_CITY"
-            display_text = "Enter City: "
+            display_text = "\tEnter City: "
             city_input = common_validator(display_text,validate_city)
             update_customer(update_query_variable,city_input,acc_no)
-            print("Updated City!")
+            print("\n\tUpdated City!")
 
         elif int(user_choice) == 8:
+            states_list = [ 'AK', 'AL', 'AR', 'AZ', 'CA', 'CO', 'CT', 'DC', 'DE', 'FL', 'GA',
+           'HI', 'IA', 'ID', 'IL', 'IN', 'KS', 'KY', 'LA', 'MA', 'MD', 'ME',
+           'MI', 'MN', 'MO', 'MS', 'MT', 'NC', 'ND', 'NE', 'NH', 'NJ', 'NM',
+           'NV', 'NY', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC', 'SD', 'TN', 'TX',
+           'UT', 'VA', 'VT', 'WA', 'WI', 'WV', 'WY']
+            print("\n\tUnited States state code list: ")
+            print(states_list)
             update_query_variable = "CUST_STATE"
-            display_text = "Enter two letter State code: "
-            state_input = common_validator(display_text,validate_state_common)
+            display_text = "\tEnter two letter State code: "
+            state_input = state_validator(display_text,validate_state,states_list)
             state_input = state_input.upper()
             update_customer(update_query_variable,state_input,acc_no)
-            print("Updated State!")
+            print("\n\tUpdated State!")
 
         elif int(user_choice) == 9:
             update_query_variable = "CUST_COUNTRY"
-            display_text = "Enter country: "
+            display_text = "\tEnter country: "
             country_input = common_validator(display_text,validate_country)
             country_input = country_input.title()
             update_customer(update_query_variable,country_input,acc_no)
-            print("Updated Country!")
+            print("\n\tUpdated Country!")
 
         elif int(user_choice) == 10:
             update_query_variable = "CUST_ZIP"
-            display_text = "Enter ZIP code: "
+            display_text = "\tEnter ZIP code: "
             zipcode_input = common_validator(display_text,validate_zip_code)
             update_customer(update_query_variable,zipcode_input,acc_no)
-            print("Updated Zip_Code!")
+            print("\n\tUpdated Zip_Code!")
 
         elif int(user_choice) == 11:
             customer_display(acc_no)
             
         elif int(user_choice) == 12:
-            print("Exiting from customer-update menu...")
+            print("\n\tExiting from customer-update menu...")
             break
-
+        else:
+            print("\tInvalid choice")
 #generate a monthly bill for a credit card number for a given month and year.
 def monthly_bill():
     creditview= create_credit_view()
-    credit_card_input = input("Enter credit card number: ")
-    month_input = input("Enter month:" )
-    year_input = input("Enter year: ")
+    credit_card_input = common_validator("\tEnter 16-digit credit card number: ", validate_cc_no)
+    month_input = common_validator("\tEnter month(in digits): ", validate_month)
+    year_input = common_validator("\tEnter year: ", validate_year)
+
     
     qurey = query = f"SELECT CUST_CC_NO, ROUND(SUM(TRANSACTION_VALUE),2) as Monthly_Bill FROM creditview \
                       WHERE MONTH(to_date(TIMEID, 'yyyyMMdd')) = {month_input} AND \
@@ -592,9 +610,9 @@ def monthly_bill():
 #display the transactions made by a customer between two dates. Order by year, month, and day in descending order.
 def transactions_by_dates():
         creditview= create_credit_view()
-        credit_card_input = input("Enter credit card number: ")
-        start_date_input = input("Enter start date: ")
-        end_date_input = input("Enter End Date: ")
+        credit_card_input = common_validator("\tEnter 16-digit credit card number: ", validate_cc_no)
+        start_date_input = common_validator("\tEnter End Date in the format(YYYY-MM-DD): ", validate_date)
+        end_date_input = common_validator("\tEnter End Date in the format(YYYY-MM-DD): ", validate_date)
 
         query = f"SELECT TRANSACTION_ID,CUST_CC_NO,BRANCH_CODE,TRANSACTION_TYPE,TRANSACTION_VALUE, \
                 TIMEID FROM creditview \
@@ -634,18 +652,23 @@ def load_to_customer_pandas():
 def high_transaction_rate_type():
     credit_df_pandas = load_to_credit_pandas()
     tr_rate_df = credit_df_pandas[["TRANSACTION_TYPE","TRANSACTION_ID"]]
-    tr_rate_df = tr_rate_df.groupby('TRANSACTION_TYPE')["TRANSACTION_ID"].count().sort_values(ascending = False)
-    #clrs = ['grey' if (x < max(values)) else 'red' for x in values ]
-    # clrs= ['grey' if(x< max(tr_rate_df['TRANSACTION_ID'])) else 'SteelBlue' for x in tr_rate_df['TRANSACTION_ID']]
-    # #tr_rate_df.reset_index(inplace = True)
-    tr_rate_df.plot(x = "TRANSACTION_TYPE", y="TRANSACTION_ID", kind = "bar",color='SteelBlue',figsize=(6, 4),bottom = 0.355)
-    plt.xlabel("Transaction Type")
-    plt.ylabel("Transaction ID")
+    tr_rate_df = tr_rate_df['TRANSACTION_TYPE'].value_counts().sort_values(ascending = True)
+    #tr_rate_df = tr_rate_df.groupby('TRANSACTION_TYPE')["TRANSACTION_ID"].count().sort_values(ascending = False)
+    values = []
+    for index, value in enumerate(tr_rate_df):
+        values.append(value)
+    max_value = values[6]
+    clrs = ['grey' if (y < max_value) else 'LightSeaGreen' for y in values ]
+    tr_rate_df.plot(x = "TRANSACTION_TYPE", y="TRANSACTION_ID", kind = "barh",color = clrs, figsize=(6, 4),bottom = 0.355)
+    plt.ylabel("Transaction Type")
+    plt.xlabel("number of Transaction ID's")
     plt.title("Transaction Type with high Transaction Rate")
-    #plt.grid(linestyle='dashed', axis="both")
-    plt.yticks(list(range(0,9000,1000)))
-    #plt.yticks([100000,200000,300000,400000,500000])
-    #plt.xticks(np.arange(1,13,2))
+    # # annotate value labels to each country
+    for index, value in enumerate(tr_rate_df): 
+        label = format(int(value), ',') # format int with commas
+
+    # place text at the end of bar (subtracting 47000 from x, and 0.1 from y to make it fit within the bar)
+        plt.annotate(label, xy=(value - 650, index - 0.10), color='Black')
     plt.show()
 
 
@@ -653,17 +676,30 @@ def high_transaction_rate_type():
 def high_customers_state():
     customer_df_pandas = load_to_customer_pandas()
     st_cust_df = customer_df_pandas[["CUST_STATE","CREDIT_CARD_NO"]]
-    st_cust_df = st_cust_df.groupby(['CUST_STATE']).count()
-    st_cust_df.reset_index(inplace = True)
-    st_cust_df.plot(kind='line', x = "CUST_STATE", y="CREDIT_CARD_NO", figsize=(10, 4),marker = 'o',linewidth = 3,grid = True) # pass a tuple (x, y) size
-    # st_cust_df.plot(x = "CUST_STATE", y="CREDIT_CARD_NO", kind = "bar",color='SteelBlue',figsize=(6, 4))
-    plt.xlabel("State")
+    st_cust_df = st_cust_df.groupby('CUST_STATE')['CREDIT_CARD_NO'].nunique().sort_values(ascending=False)
+    st_cust_df.plot(x = st_cust_df.index, y = st_cust_df.values, kind = "bar",color='SteelBlue',figsize=(10, 4))
+    #st_cust_df.plot(x= st_cust_df.index, y = st_cust_df.values, kind='line', linestyle = "dashed",figsize=(10, 4),marker = 'o',linewidth = 3,grid = True, \
+                    #markerfacecolor = "Black") # pass a tuple (x, y) size
+    plt.xlabel("States")
     plt.ylabel("Customers")
     plt.title("State with high number of customers")
     plt.grid(linestyle='dashed', axis="both",zorder=0.99,alpha = 0.15)
-    # plt.yticks(list(range(0,140,20)))
-    state_list = st_cust_df.index.to_list()
-    plt.xticks(state_list)
+
+    plt.annotate('',  # s: str. will leave it blank for no text
+             xy=(1, 94),  # place head of the arrow at point (year 2012 , pop 70)
+             xytext=(12, 40),  # place base of the arrow at point (year 2008 , pop 20)
+             xycoords='data',  # will use the coordinate system of the object being annotated
+             arrowprops=dict(arrowstyle='->', connectionstyle='arc3', color='coral', lw=2)
+             )
+
+    # Annotate Text
+    plt.annotate('2008 - state with high custmers',  # text to display
+             xy=(3.5, 50),  # start the text at at point (year 2008 , pop 30)
+             rotation=-27,  # based on trial and error to match the arrow
+             va='bottom',  # want the text to be vertically 'bottom' aligned
+             ha='left',  # want the text to be horizontally 'left' algned.
+             )
+
     plt.show()
 
 #sum of all transactions for the top 10 customers,and which customer has the highest transaction amount.
@@ -673,15 +709,23 @@ def top_ten_customers():
     top_cust_df = pd.merge(customer_df_pandas,credit_df_pandas,left_on='SSN',right_on='CUST_SSN',how="inner")
     top_cust_df = top_cust_df[["CUST_SSN","TRANSACTION_VALUE","FIRST_NAME","LAST_NAME"]]
     top_cust_df["FULL_NAME"] = top_cust_df["FIRST_NAME"]+" "+top_cust_df["LAST_NAME"]
-    top_cust_df = top_cust_df.groupby('FULL_NAME')['TRANSACTION_VALUE'].sum().sort_values(ascending=False).head(10)
+    top_cust_df = top_cust_df.groupby('FULL_NAME')['TRANSACTION_VALUE'].sum().sort_values(ascending=True).tail(10)
     #top_cust_df.reset_index(inplace = True)
-    top_cust_df.plot(x = "FULL_NAME", y="TRANSACTION_VALUE", kind = "bar",color='SteelBlue',figsize=(6, 4))
-    plt.xlabel("FULL_NAME")
-    plt.ylabel("TRANSACTION_VALUE")
+    values = []
+    for index, value in enumerate(top_cust_df):
+        values.append(value)
+    max_value = values[9]
+    clrs = ['Teal' if (y < max_value) else 'coral' for y in values ]
+    top_cust_df.plot(y = "FULL_NAME", x="TRANSACTION_VALUE", kind = "barh",color= clrs,figsize=(6, 4))
+    plt.ylabel("CUSTOMERS")
+    plt.xlabel("TRANSACTION_VALUE")
     plt.title("Top 10 customers with highest transaction amount")
     plt.grid(linestyle='dashed', axis="both",zorder=0.99,alpha = 0.15)
-    plt.yticks(list(range(0,7000,500)))
-    #plt.xticks(np.arange(1,13,2))
+    for index, value in enumerate(top_cust_df): 
+        label = float(value) # format int with commas
+    # place text at the end of bar (subtracting 47000 from x, and 0.1 from y to make it fit within the bar)
+        plt.annotate(label, xy=(value - 850, index - 0.2), color='Black')
+    
     plt.show()
 
 #plot the top three months with the largest transaction data
@@ -692,26 +736,25 @@ def three_months_largest_transaction():
     largest_tr_df['MONTH'] = largest_tr_df['TIMEID'].dt.month_name()
     largest_tr_df.drop(columns = 'TIMEID',inplace= True)
     largest_tr_df = largest_tr_df.groupby('MONTH')['TRANSACTION_VALUE'].sum().sort_values(ascending=False).head(3)
-    # largest_tr_df.plot(x = "MONTH", y="TRANSACTION_VALUE", kind = "bar",color='SteelBlue',figsize=(6, 4))
-    # plt.xlabel("MONTH")
-    # plt.ylabel("TRANSACTION_VALUE")
-    # plt.title("Top three months with the largest transaction data")
-    # plt.grid(linestyle='dashed', axis="both",zorder=0.99,alpha = 0.15)
     fig = plt.figure() # create figure
     ax0 = fig.add_subplot(1, 2, 1) # add subplot 1 (1 row, 2 columns, first plot)
     ax1 = fig.add_subplot(1, 2, 2) # add subplot 2 (1 row, 2 columns, second plot). 
 
     # Subplot 1: Box plot
     largest_tr_df.plot(kind='bar', color='SteelBlue', figsize=(20, 6), ax=ax0) # add to subplot 1
+    for index,value in enumerate(largest_tr_df.values):
+        ax0.text(index,value+1, str(value),ha = 'center')
     ax0.set_title('Top three months with the largest transaction data')
-    ax0.set_xlabel('Month')
+    ax0.set_xlabel('Months')
     ax0.set_ylabel('Transaction Value')
 
     # Subplot 2: Line plot
-    largest_tr_df.plot(kind='line', figsize=(20, 6), ax=ax1) # add to subplot 2
+    largest_tr_df.plot(kind='line',linestyle = "dashed", figsize=(20, 6),marker = 'o',markerfacecolor = "grey", ax=ax1) # add to subplot 2
+    #st_cust_df.plot(x= st_cust_df.index, y = st_cust_df.values, kind='line', linestyle = "dashed",figsize=(10, 4),marker = 'o',linewidth = 3,grid = True, \
+    #           markerfacecolor = "Black") # pass a tuple (x, y) size
     ax1.set_title ('Top three months with the largest transaction data')
-    ax1.set_ylabel('Number of Immigrants')
-    ax1.set_xlabel('Years')
+    ax1.set_ylabel('Transaction Value')
+    ax1.set_xlabel('Months')
 
     plt.show()
 
@@ -725,7 +768,7 @@ def loan_to_pandas():
 def approved_self_employeed():
     loan_df_pandas = loan_to_pandas()
     color_list = ['Teal','lightBlue']
-    label_value = ['Not Self_Employeed','Self_Employeed']
+    label_value = ['Not Approved','Approved']
     explode_list =[0.1,0]
     df=loan_df_pandas[loan_df_pandas['Application_Status']== 'Y'][['Self_Employed']].value_counts()
     df.plot(kind='pie',
@@ -747,7 +790,7 @@ def married_male_applicants_rejection():
     color_list = ['Coral', 'Teal', 'SteelBlue', 'lightskyblue']
     explode_list =[0.1,0,0,0]
     df = loan_df_pandas[['Gender','Married']][loan_df_pandas['Application_Status'] == 'N'].value_counts()
-    label_value=['Male - Married','Female - Married','Female - Unmarried','Male - Unmarried']
+    label_value=['Married Male','Unarried Male','Unmarried Female','Married Feale']
     df.plot(kind='pie',
            figsize=(5, 6),
            autopct='%1.1f%%',
@@ -758,7 +801,7 @@ def married_male_applicants_rejection():
            explode=explode_list
            )
     plt.title('            percentage of rejection for married male applicants                ', y=1.12) 
-    plt.legend(labels=label_value, bbox_to_anchor=(1.5,1.025),loc='upper right') 
+    plt.legend(labels=label_value,bbox_to_anchor=(1.5,1.025),loc='upper right') 
     plt.show()
 
 
@@ -766,11 +809,21 @@ def married_male_applicants_rejection():
 def branch_highest_healthcare_tr():
     credit_df_pandas = load_to_credit_pandas() 
     high_health_df = credit_df_pandas[credit_df_pandas["TRANSACTION_TYPE"]=="Healthcare"].groupby("BRANCH_CODE")\
-                    .sum()["TRANSACTION_VALUE"].sort_values(ascending=False).head(10)
-    high_health_df.plot(x=high_health_df.index, y = high_health_df.values,kind = "bar",figsize=(6,4))
+                    .sum()["TRANSACTION_VALUE"].sort_values(ascending=True).head(10)
+    values = []
+    for index, value in enumerate(high_health_df):
+       values.append(value)
+    max_value = values[9]
+    clrs = ['LightSeaGreen' if (y < max_value) else 'Blue' for y in values ]
+    high_health_df.plot(x=high_health_df.index, y = high_health_df.values,color = clrs,kind = "barh",figsize=(6,4))
     plt.xlabel("BRANCH CODE")
-    plt.ylabel("TRANSACTION Amount")
-    plt.title("Branch code with highest total value for Healthcare")
+    plt.ylabel("TRANSACTION AMOUNT")
+    plt.title("Branch code with highest value for Healthcare")
+    for index, value in enumerate(high_health_df): 
+        label = int(value)# format int with commas
+        # place text at the end of bar (subtracting 47000 from x, and 0.1 from y to make it fit within the bar)
+        plt.annotate(label, xy=(value - 250, index - 0.2), color='Black')
+    
     plt.show()
     
 
@@ -783,7 +836,7 @@ def function_before_exiting():
 #Menu functions
 def main_menu(): 
     while True:
-        print(fontstyle.apply("\tMAIN MENU",'bold/Italic/UNDERLINE'))
+        print(fontstyle.apply("\n\tMAIN MENU",'bold/Italic/UNDERLINE'))
         print(fontstyle.apply('''\n\t
         1.Transaction Details
         2.Customer Details
@@ -906,53 +959,53 @@ def data_visualization_menu():
 
 
 if __name__ == "__main__":      
-    print(fontstyle.apply(" \t\t CAPSTONE PROJECT \n\n",'bold/UNDERLINE'))
+    # print(fontstyle.apply(" \t\t CAPSTONE PROJECT \n\n",'bold/UNDERLINE'))
 
-    print("\tCREDITCARD SYSTEM DATABASE \n\n")
-    # Log that you have started the ETL process
-    print("\tETL Job Started \n")
+    # print("\tCREDITCARD SYSTEM DATABASE \n\n")
+    # # Log that you have started the ETL process
+    # print("\tETL Job Started \n")
 
-    # Log that you have started the Extract step
-    print("\tExtract phase Started \n")
+    # # Log that you have started the Extract step
+    # print("\tExtract phase Started \n")
 
-    # Call the Extract function
-    extracted_customer_data = customer_extract()
-    extracted_branch_data = branch_extract()
-    extracted_credit_data = credit_pandas_extract()
+    # # Call the Extract function
+    # extracted_customer_data = customer_extract()
+    # extracted_branch_data = branch_extract()
+    # extracted_credit_data = credit_pandas_extract()
 
-    # Log that you have completed the Extract step
-    print("\tExtract phase Ended \n")
+    # #xLog that you have completed the Extract step
+    # print("\n\tExtract phase Ended")
 
-    # Log that you have started the Transform step
-    print("\tTransform phase Started \n")
+    # # Log that you have started the Transform step
+    # print("\n\tTransform phase Started \n")
 
-    # Call the Transform function
-    customer_transformed_data = customer_transform(extracted_customer_data)
-    branch_transformed_data = branch_transform(extracted_branch_data)
-    credit_transformed_data = credit_transform(extracted_credit_data)
+    # # Call the Transform function
+    # customer_transformed_data = customer_transform(extracted_customer_data)
+    # branch_transformed_data = branch_transform(extracted_branch_data)
+    # credit_transformed_data = credit_transform(extracted_credit_data)
 
-    # Log that you have completed the Transform step
-    print("\tTransform phase Ended \n")
+    # # Log that you have completed the Transform step
+    # print("\tTransform phase Ended \n")
 
-    # Log that you have started the Load step
-    print("\tLoad phase Started \n")
+    # # Log that you have started the Load step
+    # print("\tLoad phase Started \n")
 
-    # Call the Load function
-    customer_load(customer_transformed_data)
-    branch_load(branch_transformed_data)
-    credit_load(credit_transformed_data)
+    # # Call the Load function
+    # customer_load(customer_transformed_data)
+    # branch_load(branch_transformed_data)
+    # credit_load(credit_transformed_data)
 
 
-    # Log that you have completed the Load step
-    print("\tLoad phase Ended \n")
+    # # Log that you have completed the Load step
+    # print("\tLoad phase Ended \n")
 
-    # Log that you have completed the ETL process
-    print("\tETL Job Ended \n")
+    # # Log that you have completed the ETL process
+    # print("\tETL Job Ended \n")
 
-    #loan-api-module
-    print ("\n\t LOAN application Data API")
-    loan_df= loan_app()
-    loan_load(loan_df)
+    # #loan-api-module
+    # print ("\n\tLOAN application Data API")
+    # loan_df= loan_app()
+    # loan_load(loan_df)
 
     main_menu()
 
