@@ -26,15 +26,28 @@ spark = SparkSession.builder.master("local[*]").appName("Capstone app").getOrCre
 #Extract data from JSON to DataFrame
 def branch_extract():
     print("\tExtraxting branch data...")
-    branch_df = spark.read.json("json_files/cdw_sapp_branch.json")
+    try:
+        branch_df = spark.read.json("json_files/cdw_sapp_branch.json")
+    except Exception as e:
+        print(f"Exception in credit_pandas_extract: {e}")
+        raise Exception(e)    
     return branch_df
 def customer_extract():
     print("\tExtraxting customer data...")
-    customer_df = spark.read.json("json_files/cdw_sapp_custmer.json")
+    try:
+        customer_df = spark.read.json("json_files/cdw_sapp_custmer.json")
+    except Exception as e:
+        print(f"Exception in credit_pandas_extract: {e}")
+        raise Exception(e)    
     return customer_df
 def credit_extract():
     print("\tExtraxting credit data...")
-    credit_df = spark.read.json("json_files/cdw_sapp_credit.json")
+    credit_df = None
+    try:
+        credit_df = spark.read.json("json_files/cdw_sapp_credit.json")
+    except Exception as e:
+        print(f"Exception in credit_pandas_extract: {e}")
+        raise Exception(e)    
     return credit_df
 def credit_pandas_extract():
     print("\tExtraxting credit data...")
@@ -50,10 +63,14 @@ def credit_pandas_extract():
 #Loan Application Data - Module
 def loan_app():
     print("\tAccessing LOAN application Data API ")
-    url = "https://raw.githubusercontent.com/platformps/LoanDataset/main/loan_data.json"
-    print("\n\tStatus code for the loan API: ",requests.get(url).status_code)
-    loan_api_list = requests.get(url).json()
-    loan_df=spark.createDataFrame(loan_api_list)
+    try:
+        url = "https://raw.githubusercontent.com/platformps/LoanDataset/main/loan_data.json"
+        print("\n\tStatus code for the loan API: ",requests.get(url).status_code)
+        loan_api_list = requests.get(url).json()
+        loan_df=spark.createDataFrame(loan_api_list)
+    except Exception as e:
+        print(f"Exception in credit_pandas_extract: {e}")
+        raise Exception(e)    
     return loan_df
 
 
@@ -149,100 +166,133 @@ def credit_transform(credit_df_pandas):
 
 #Data loading into Database
 def branch_load(branch_transform_df):
-       print("\tLoading transformed branch data into Database...")
-       branch_transform_df.write.format("jdbc") \
-       .mode("append") \
-       .option("url", "jdbc:mysql://localhost:3306/creditcard_capstone") \
-       .option("createTableColumnTypes", "BRANCH_NAME VARCHAR(30), BRANCH_CITY VARCHAR(30),\
-              BRANCH_STREET VARCHAR(30), BRANCH_STATE VARCHAR(30) ,BRANCH_PHONE VARCHAR(14) ")  \
-       .option("dbtable", "creditcard_capstone.CDW_SAPP_BRANCH") \
-       .option("user", username) \
-       .option("password", password) \
-       .option("characterEncoding","UTF-8") \
-       .option("useUnicode", "true") \
-       .save()
+        print("\tLoading transformed branch data into Database...")
+        try:
+            branch_transform_df.write.format("jdbc") \
+            .mode("append") \
+            .option("url", "jdbc:mysql://localhost:3306/creditcard_capstone") \
+            .option("createTableColumnTypes", "BRANCH_NAME VARCHAR(30), BRANCH_CITY VARCHAR(30),\
+                    BRANCH_STREET VARCHAR(30), BRANCH_STATE VARCHAR(30) ,BRANCH_PHONE VARCHAR(14) ")  \
+            .option("dbtable", "creditcard_capstone.CDW_SAPP_BRANCH") \
+            .option("user", username) \
+            .option("password", password) \
+            .option("characterEncoding","UTF-8") \
+            .option("useUnicode", "true") \
+            .save()
+        except Exception as e:
+            print(f"Exception in credit_pandas_extract: {e}")
+            raise Exception(e)    
+
 
 def credit_load(credit_transform_df):
-       print("\tLoading transformed credit data into Database...")
-       credit_transform_df.write.format("jdbc") \
-        .mode("append") \
-        .option("url", "jdbc:mysql://localhost:3306/creditcard_capstone") \
-        .option("createTableColumnTypes", "CUST_CC_NO VARCHAR(30), TRANSACTION_TYPE VARCHAR(30),\
-               TIMEID VARCHAR(30)")  \
-        .option("dbtable", "creditcard_capstone.CDW_SAPP_CREDIT_CARD") \
-        .option("user", username) \
-        .option("password", password) \
-        .option("characterEncoding","UTF-8") \
-        .option("useUnicode", "true") \
-        .save()
+        print("\tLoading transformed credit data into Database...")
+        try:
+            credit_transform_df.write.format("jdbc") \
+             .mode("append") \
+             .option("url", "jdbc:mysql://localhost:3306/creditcard_capstone") \
+             .option("createTableColumnTypes", "CUST_CC_NO VARCHAR(30), TRANSACTION_TYPE VARCHAR(30),\
+                    TIMEID VARCHAR(30)")  \
+             .option("dbtable", "creditcard_capstone.CDW_SAPP_CREDIT_CARD") \
+             .option("user", username) \
+             .option("password", password) \
+             .option("characterEncoding","UTF-8") \
+             .option("useUnicode", "true") \
+             .save()
+        except Exception as e:
+            print(f"Exception in credit_pandas_extract: {e}")
+            raise Exception(e)    
 
 def customer_load(customer_transform_df):
-       print("\tLoading transformed customer data into Database...")
-       customer_transform_df.write.format("jdbc") \
-        .mode("append") \
-        .option("url", "jdbc:mysql://localhost:3306/creditcard_capstone") \
-        .option("createTableColumnTypes", "FIRST_NAME VARCHAR(30), MIDDLE_NAME VARCHAR(30),\
-               LAST_NAME VARCHAR(30),CREDIT_CARD_NO VARCHAR(30),FULL_STREET_ADDRESS VARCHAR(50), \
-               CUST_CITY VARCHAR(30),CUST_STATE VARCHAR(30),CUST_COUNTRY VARCHAR(30),  \
-               CUST_PHONE VARCHAR(30),CUST_EMAIL VARCHAR(30)")  \
-        .option("dbtable", "creditcard_capstone.CDW_SAPP_CUSTOMER") \
-        .option("user", username) \
-        .option("password", password) \
-        .option("characterEncoding","UTF-8") \
-        .option("useUnicode", "true") \
-        .save()
+        print("\tLoading transformed customer data into Database...")
+        try:
+            customer_transform_df.write.format("jdbc") \
+             .mode("append") \
+             .option("url", "jdbc:mysql://localhost:3306/creditcard_capstone") \
+             .option("createTableColumnTypes", "FIRST_NAME VARCHAR(30), MIDDLE_NAME VARCHAR(30),\
+                    LAST_NAME VARCHAR(30),CREDIT_CARD_NO VARCHAR(30),FULL_STREET_ADDRESS VARCHAR(50), \
+                    CUST_CITY VARCHAR(30),CUST_STATE VARCHAR(30),CUST_COUNTRY VARCHAR(30),  \
+                    CUST_PHONE VARCHAR(30),CUST_EMAIL VARCHAR(30)")  \
+             .option("dbtable", "creditcard_capstone.CDW_SAPP_CUSTOMER") \
+             .option("user", username) \
+             .option("password", password) \
+             .option("characterEncoding","UTF-8") \
+             .option("useUnicode", "true") \
+             .save()
+        except Exception as e:
+            print(f"Exception in credit_pandas_extract: {e}")
+            raise Exception(e)    
 
 
 
 def loan_load(loan_df):
     print("\n\tLoading loan data into Database....")
-    loan_df.write.format("jdbc") \
-    .mode("append") \
-    .option("url", "jdbc:mysql://localhost:3306/creditcard_capstone") \
-    .option("dbtable", "creditcard_capstone.CDW_SAPP_loan_application") \
-    .option("user", username) \
-    .option("password", password) \
-    .option("characterEncoding","UTF-8") \
-    .option("useUnicode", "True") \
-    .save()
+    try:
+        loan_df.write.format("jdbc") \
+        .mode("append") \
+        .option("url", "jdbc:mysql://localhost:3306/creditcard_capstone") \
+        .option("dbtable", "creditcard_capstone.CDW_SAPP_loan_application") \
+        .option("user", username) \
+        .option("password", password) \
+        .option("characterEncoding","UTF-8") \
+        .option("useUnicode", "True") \
+        .save()
+    except Exception as e:
+        print(f"Exception in credit_pandas_extract: {e}")
+        raise Exception(e)    
     
 
 #Functional Requirements - Application Front-End
 
 #load from database
 def load_branch_from_db():
-    branch_df=spark.read.format("jdbc").options(driver="com.mysql.cj.jdbc.Driver",\
-                                     user=username,\
-                                     password=password,\
-                                     url="jdbc:mysql://localhost:3306/companyabc_db",\
-                                     dbtable="creditcard_capstone.CDW_SAPP_BRANCH").load()
-    return branch_df
+    try:
+        branch_df=spark.read.format("jdbc").options(driver="com.mysql.cj.jdbc.Driver",\
+                                         user=username,\
+                                         password=password,\
+                                         url="jdbc:mysql://localhost:3306/companyabc_db",\
+                                         dbtable="creditcard_capstone.CDW_SAPP_BRANCH").load()
+        return branch_df
+    except Exception as e:
+        print(f"Exception in credit_pandas_extract: {e}")
+        raise Exception(e)    
 
 
 def load_credit_from_db():
-    credit_df=spark.read.format("jdbc").options(driver="com.mysql.cj.jdbc.Driver",\
-                                     user=username,\
-                                     password=password,\
-                                     url="jdbc:mysql://localhost:3306/companyabc_db",\
-                                     dbtable="creditcard_capstone.CDW_SAPP_CREDIT_CARD").load()
+    try:
+        credit_df=spark.read.format("jdbc").options(driver="com.mysql.cj.jdbc.Driver",\
+                                         user=username,\
+                                         password=password,\
+                                         url="jdbc:mysql://localhost:3306/companyabc_db",\
+                                         dbtable="creditcard_capstone.CDW_SAPP_CREDIT_CARD").load()
+    except Exception as e:
+        print(f"Exception in credit_pandas_extract: {e}")
+        raise Exception(e)    
     return credit_df
 
 
 def load_customer_from_db():
-    customer_df=spark.read.format("jdbc").options(driver="com.mysql.cj.jdbc.Driver",\
-                                     user=username,\
-                                     password=password,\
-                                     url="jdbc:mysql://localhost:3306/companyabc_db",\
-                                     dbtable="creditcard_capstone.CDW_SAPP_CUSTOMER").load()
+    try:
+        customer_df=spark.read.format("jdbc").options(driver="com.mysql.cj.jdbc.Driver",\
+                                         user=username,\
+                                         password=password,\
+                                         url="jdbc:mysql://localhost:3306/companyabc_db",\
+                                         dbtable="creditcard_capstone.CDW_SAPP_CUSTOMER").load()
+    except Exception as e:
+        print(f"Exception in credit_pandas_extract: {e}")
+        raise Exception(e)    
     return customer_df
 
 
 def load_loan_from_db():
-    loan_df=spark.read.format("jdbc").options(driver="com.mysql.cj.jdbc.Driver",\
-                                     user=username,\
-                                     password=password,\
-                                     url="jdbc:mysql://localhost:3306/companyabc_db",\
-                                     dbtable="creditcard_capstone.CDW_SAPP_loan_application").load()
+    try:
+        loan_df=spark.read.format("jdbc").options(driver="com.mysql.cj.jdbc.Driver",\
+                                         user=username,\
+                                         password=password,\
+                                         url="jdbc:mysql://localhost:3306/companyabc_db",\
+                                         dbtable="creditcard_capstone.CDW_SAPP_loan_application").load()
+    except Exception as e:
+        print(f"Exception in credit_pandas_extract: {e}")
+        raise Exception(e)    
     return loan_df
 
 
@@ -469,14 +519,19 @@ def customer_display(cc_no_input):
 
 #Establish Database connectivity and update
 def update_customer(update_query_variable,user_update_input,credit_card_no_input):
-    con=mariadb.connect(host="localhost",user=username,password=password,database="creditcard_capstone")
-    cur=con.cursor()
-    st=f"update cdw_sapp_customer set {update_query_variable} = '{user_update_input}'\
-         where CREDIT_CARD_NO = '{credit_card_no_input}'"
-    cur.execute(st)
-    con.commit()
-    cur.close()
-    con.close()
+    try:
+        con=mariadb.connect(host="localhost",user=username,password=password,database="creditcard_capstone")
+        cur=con.cursor()
+        st=f"update cdw_sapp_customer set {update_query_variable} = '{user_update_input}'\
+             where CREDIT_CARD_NO = '{credit_card_no_input}'"
+        cur.execute(st)
+        con.commit()
+        cur.close()
+    except Exception as e:
+        print(f"Exception in credit_pandas_extract: {e}")
+        raise Exception(e)   
+    finally: 
+        con.close()
 
 def modify_customer():
     #modify the existing account details of a customer
@@ -596,27 +651,35 @@ def modify_customer():
 #generate a monthly bill for a credit card number for a given month and year.
 def monthly_bill():
     creditview= create_credit_view()
+    customerview= create_customer_view()
     credit_card_input = common_validator("\tEnter 16-digit credit card number: ", validate_cc_no)
     month_input = common_validator("\tEnter month(in digits): ", validate_month)
     year_input = common_validator("\tEnter year: ", validate_year)
 
     
-    qurey = query = f"SELECT CUST_CC_NO, ROUND(SUM(TRANSACTION_VALUE),2) as Monthly_Bill FROM creditview \
+    qurey = query = f"SELECT CONCAT(customer.FIRST_NAME,customer.LAST_NAME) as FULL_NAME, \
+                      ROUND(SUM(TRANSACTION_VALUE),2) as Monthly_Bill \
+                      FROM creditview as credit inner join customerview as customer on \
+                      customer.CREDIT_CARD_NO = credit.CUST_CC_NO \
                       WHERE MONTH(to_date(TIMEID, 'yyyyMMdd')) = {month_input} AND \
                       YEAR(to_date(TIMEID, 'yyyyMMdd')) = {year_input} and CUST_CC_NO={credit_card_input} \
-                      GROUP BY CUST_CC_NO"
+                      GROUP BY CUST_CC_NO,FIRST_NAME,LAST_NAME"
+    
     spark.sql(query).show()
 
 
 #display the transactions made by a customer between two dates. Order by year, month, and day in descending order.
 def transactions_by_dates():
         creditview= create_credit_view()
+        customerview= create_customer_view()
         credit_card_input = common_validator("\tEnter 16-digit credit card number: ", validate_cc_no)
         start_date_input = common_validator("\tEnter End Date in the format(YYYY-MM-DD): ", validate_date)
         end_date_input = common_validator("\tEnter End Date in the format(YYYY-MM-DD): ", validate_date)
 
-        query = f"SELECT TRANSACTION_ID,CUST_CC_NO,BRANCH_CODE,TRANSACTION_TYPE,TRANSACTION_VALUE, \
-                TIMEID FROM creditview \
+        query = f"SELECT CONCAT(customer.FIRST_NAME,customer.LAST_NAME) as FULL_NAME, \
+                TRANSACTION_ID,BRANCH_CODE,TRANSACTION_TYPE,TRANSACTION_VALUE, \
+                TIMEID FROM creditview inner join customerview as customer on \
+                customer.CREDIT_CARD_NO = credit.CUST_CC_NO \
                 WHERE to_date(TIMEID, 'yyyyMMdd') >= '{start_date_input}' \
                 AND to_date(TIMEID, 'yyyyMMdd') <= '{end_date_input}' \
                 AND cust_cc_no = {credit_card_input} ORDER BY \
@@ -961,53 +1024,53 @@ def data_visualization_menu():
 
 
 if __name__ == "__main__":      
-    print(fontstyle.apply(" \t\t CAPSTONE PROJECT \n\n",'bold/UNDERLINE'))
+    # print(fontstyle.apply(" \t\t CAPSTONE PROJECT \n\n",'bold/UNDERLINE'))
 
-    print("\tCREDITCARD SYSTEM DATABASE \n\n")
-    # Log that you have started the ETL process
-    print("\tETL Job Started \n")
+    # print("\tCREDITCARD SYSTEM \n\n")
+    # # Log that you have started the ETL process
+    # print("\tETL Job Started \n")
 
-    # Log that you have started the Extract step
-    print("\tExtract phase Started \n")
+    # # Log that you have started the Extract step
+    # print("\tExtract phase Started \n")
 
-    # Call the Extract function
-    extracted_customer_data = customer_extract()
-    extracted_branch_data = branch_extract()
-    extracted_credit_data = credit_pandas_extract()
+    # # Call the Extract function
+    # extracted_customer_data = customer_extract()
+    # extracted_branch_data = branch_extract()
+    # extracted_credit_data = credit_pandas_extract()
 
-    #xLog that you have completed the Extract step
-    print("\n\tExtract phase Ended")
+    # #xLog that you have completed the Extract step
+    # print("\n\tExtract phase Ended")
 
-    # Log that you have started the Transform step
-    print("\n\tTransform phase Started \n")
+    # # Log that you have started the Transform step
+    # print("\n\tTransform phase Started \n")
 
-    # Call the Transform function
-    customer_transformed_data = customer_transform(extracted_customer_data)
-    branch_transformed_data = branch_transform(extracted_branch_data)
-    credit_transformed_data = credit_transform(extracted_credit_data)
+    # # Call the Transform function
+    # customer_transformed_data = customer_transform(extracted_customer_data)
+    # branch_transformed_data = branch_transform(extracted_branch_data)
+    # credit_transformed_data = credit_transform(extracted_credit_data)
 
-    # Log that you have completed the Transform step
-    print("\tTransform phase Ended \n")
+    # # Log that you have completed the Transform step
+    # print("\tTransform phase Ended \n")
 
-    # Log that you have started the Load step
-    print("\tLoad phase Started \n")
+    # # Log that you have started the Load step
+    # print("\tLoad phase Started \n")
 
-    # Call the Load function
-    customer_load(customer_transformed_data)
-    branch_load(branch_transformed_data)
-    credit_load(credit_transformed_data)
+    # # Call the Load function
+    # customer_load(customer_transformed_data)
+    # branch_load(branch_transformed_data)
+    # credit_load(credit_transformed_data)
 
 
-    # Log that you have completed the Load step
-    print("\tLoad phase Ended \n")
+    # # Log that you have completed the Load step
+    # print("\n\tLoad phase Ended \n")
 
-    # Log that you have completed the ETL process
-    print("\tETL Job Ended \n")
+    # # Log that you have completed the ETL process
+    # print("\tETL Job Ended \n")
 
-    #loan-api-module
-    print ("\n\tLOAN application Data API")
-    loan_df= loan_app()
-    loan_load(loan_df)
+    # #loan-api-module
+    # print ("\n\tLOAN application Data API")
+    # loan_df= loan_app()
+    # loan_load(loan_df)
 
     main_menu()
 
