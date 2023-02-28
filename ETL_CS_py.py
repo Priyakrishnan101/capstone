@@ -363,8 +363,9 @@ def validate_street(home_no,street):
     return True if home_no.isnumeric() else False
 
 def validate_city(city):
-    pattern = r"^[a-zA-Z]+(?:(?:\\s+|-)[a-zA-Z]+)*$"
+    pattern = r"^[a-zA-Z\s]+$"
     return bool(re.match(pattern, str(city)))
+    #return True if city.isalpha() and len(city) <20 else False
 
 def validate_state_common(state):
     pattern = r"^[A-Za-z]{2}$"
@@ -507,49 +508,49 @@ def modify_customer():
 
         elif int(user_choice) == 1:
             update_query_variable = "FIRST_NAME"
-            display_text = "\tEnter First Name: "
+            display_text = "\tEnter First Name to update: "
             first_name_input = name_validator(display_text,validate_name,update_query_variable)
             update_customer(update_query_variable,first_name_input,acc_no)
             print("\n\tUpdated First Name!")
 
         elif int(user_choice) == 2:
             update_query_variable = "LAST_NAME"
-            display_text = "\tEnter Last Name: "
+            display_text = "\tEnter Last Name to update: "
             last_name_input = name_validator(display_text,validate_name,update_query_variable)
             update_customer(update_query_variable,last_name_input,acc_no)
             print("\n\tUpdated Last Name!")
 
         elif int(user_choice) == 3:
             update_query_variable = "MIDDLE_NAME"
-            display_text = "\tEnter Middle Name: "
+            display_text = "\tEnter Middle Name to update: "
             middle_name_input = name_validator(display_text,validate_name,update_query_variable)
             update_customer(update_query_variable,middle_name_input,acc_no)
             print("\n\tUpdated Middle Name!")
 
         elif int(user_choice) == 4:
             update_query_variable = "CUST_PHONE"
-            display_text = "\tEnter 10 digit phone number: "
+            display_text = "\tEnter 10 digit phone number toupdate: "
             phone_no_input = common_validator(display_text,validate_ph_no)
             phone_no_input= f"({phone_no_input[:3]}){phone_no_input[3:6]}-{phone_no_input[6:10]}"
             update_customer(update_query_variable,phone_no_input,acc_no)
             print("\n\tUpdated Phone Number!")
 
         elif int(user_choice) == 5:
-            update_query_variable = "CUST_EMAIL"
+            update_query_variable = "CUST_EMAIL to update"
             display_text = "\tEnter Email-id: "
             email_input = common_validator(display_text,validate_email)
             update_customer(update_query_variable,email_input,acc_no)
             print("\n\tUpdated Email-id!")
 
         elif int(user_choice) == 6:
-            update_query_variable = "FULL_STREET_ADDRESS"
+            update_query_variable = "FULL_STREET_ADDRESS to update"
             street_input = street_validator(validate_street)
             update_customer(update_query_variable,street_input,acc_no)
             print("\n\tUpdated Full Street Address!")
 
         elif int(user_choice) == 7:
             update_query_variable = "CUST_CITY"
-            display_text = "\tEnter City: "
+            display_text = "\tEnter City to update: "
             city_input = common_validator(display_text,validate_city)
             update_customer(update_query_variable,city_input,acc_no)
             print("\n\tUpdated City!")
@@ -563,7 +564,7 @@ def modify_customer():
             print("\n\tUnited States state code list: ")
             print(states_list)
             update_query_variable = "CUST_STATE"
-            display_text = "\tEnter two letter State code: "
+            display_text = "\tEnter two letter State code to update: "
             state_input = state_validator(display_text,validate_state,states_list)
             state_input = state_input.upper()
             update_customer(update_query_variable,state_input,acc_no)
@@ -571,7 +572,7 @@ def modify_customer():
 
         elif int(user_choice) == 9:
             update_query_variable = "CUST_COUNTRY"
-            display_text = "\tEnter country: "
+            display_text = "\tEnter country to update: "
             country_input = common_validator(display_text,validate_country)
             country_input = country_input.title()
             update_customer(update_query_variable,country_input,acc_no)
@@ -579,7 +580,7 @@ def modify_customer():
 
         elif int(user_choice) == 10:
             update_query_variable = "CUST_ZIP"
-            display_text = "\tEnter ZIP code: "
+            display_text = "\tEnter 5-digit ZIP code to update: "
             zipcode_input = common_validator(display_text,validate_zip_code)
             update_customer(update_query_variable,zipcode_input,acc_no)
             print("\n\tUpdated Zip_Code!")
@@ -741,7 +742,7 @@ def three_months_largest_transaction():
     ax1 = fig.add_subplot(1, 2, 2) # add subplot 2 (1 row, 2 columns, second plot). 
 
     # Subplot 1: Box plot
-    largest_tr_df.plot(kind='bar', color='SteelBlue', figsize=(20, 6), ax=ax0) # add to subplot 1
+    largest_tr_df.plot(kind='bar',width = 0.4, color='SteelBlue', figsize=(20, 6), ax=ax0) # add to subplot 1
     for index,value in enumerate(largest_tr_df.values):
         ax0.text(index,value+1, str(value),ha = 'center')
     ax0.set_title('Top three months with the largest transaction data')
@@ -755,6 +756,7 @@ def three_months_largest_transaction():
     ax1.set_title ('Top three months with the largest transaction data')
     ax1.set_ylabel('Transaction Value')
     ax1.set_xlabel('Months')
+    plt.legend()
 
     plt.show()
 
@@ -814,7 +816,7 @@ def branch_highest_healthcare_tr():
     for index, value in enumerate(high_health_df):
        values.append(value)
     max_value = values[9]
-    clrs = ['LightSeaGreen' if (y < max_value) else 'Blue' for y in values ]
+    clrs = ['LightSeaGreen' if (y < max_value) else 'SteelBlue' for y in values ]
     high_health_df.plot(x=high_health_df.index, y = high_health_df.values,color = clrs,kind = "barh",figsize=(6,4))
     plt.xlabel("BRANCH CODE")
     plt.ylabel("TRANSACTION AMOUNT")
@@ -959,53 +961,53 @@ def data_visualization_menu():
 
 
 if __name__ == "__main__":      
-    # print(fontstyle.apply(" \t\t CAPSTONE PROJECT \n\n",'bold/UNDERLINE'))
+    print(fontstyle.apply(" \t\t CAPSTONE PROJECT \n\n",'bold/UNDERLINE'))
 
-    # print("\tCREDITCARD SYSTEM DATABASE \n\n")
-    # # Log that you have started the ETL process
-    # print("\tETL Job Started \n")
+    print("\tCREDITCARD SYSTEM DATABASE \n\n")
+    # Log that you have started the ETL process
+    print("\tETL Job Started \n")
 
-    # # Log that you have started the Extract step
-    # print("\tExtract phase Started \n")
+    # Log that you have started the Extract step
+    print("\tExtract phase Started \n")
 
-    # # Call the Extract function
-    # extracted_customer_data = customer_extract()
-    # extracted_branch_data = branch_extract()
-    # extracted_credit_data = credit_pandas_extract()
+    # Call the Extract function
+    extracted_customer_data = customer_extract()
+    extracted_branch_data = branch_extract()
+    extracted_credit_data = credit_pandas_extract()
 
-    # #xLog that you have completed the Extract step
-    # print("\n\tExtract phase Ended")
+    #xLog that you have completed the Extract step
+    print("\n\tExtract phase Ended")
 
-    # # Log that you have started the Transform step
-    # print("\n\tTransform phase Started \n")
+    # Log that you have started the Transform step
+    print("\n\tTransform phase Started \n")
 
-    # # Call the Transform function
-    # customer_transformed_data = customer_transform(extracted_customer_data)
-    # branch_transformed_data = branch_transform(extracted_branch_data)
-    # credit_transformed_data = credit_transform(extracted_credit_data)
+    # Call the Transform function
+    customer_transformed_data = customer_transform(extracted_customer_data)
+    branch_transformed_data = branch_transform(extracted_branch_data)
+    credit_transformed_data = credit_transform(extracted_credit_data)
 
-    # # Log that you have completed the Transform step
-    # print("\tTransform phase Ended \n")
+    # Log that you have completed the Transform step
+    print("\tTransform phase Ended \n")
 
-    # # Log that you have started the Load step
-    # print("\tLoad phase Started \n")
+    # Log that you have started the Load step
+    print("\tLoad phase Started \n")
 
-    # # Call the Load function
-    # customer_load(customer_transformed_data)
-    # branch_load(branch_transformed_data)
-    # credit_load(credit_transformed_data)
+    # Call the Load function
+    customer_load(customer_transformed_data)
+    branch_load(branch_transformed_data)
+    credit_load(credit_transformed_data)
 
 
-    # # Log that you have completed the Load step
-    # print("\tLoad phase Ended \n")
+    # Log that you have completed the Load step
+    print("\tLoad phase Ended \n")
 
-    # # Log that you have completed the ETL process
-    # print("\tETL Job Ended \n")
+    # Log that you have completed the ETL process
+    print("\tETL Job Ended \n")
 
-    # #loan-api-module
-    # print ("\n\tLOAN application Data API")
-    # loan_df= loan_app()
-    # loan_load(loan_df)
+    #loan-api-module
+    print ("\n\tLOAN application Data API")
+    loan_df= loan_app()
+    loan_load(loan_df)
 
     main_menu()
 
