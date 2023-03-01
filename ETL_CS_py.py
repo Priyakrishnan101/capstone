@@ -29,7 +29,7 @@ def branch_extract():
     try:
         branch_df = spark.read.json("json_files/cdw_sapp_branch.json")
     except Exception as e:
-        print(f"Exception in credit_pandas_extract: {e}")
+        print(f"Exception: {e}")
         raise Exception(e)    
     return branch_df
 def customer_extract():
@@ -37,7 +37,7 @@ def customer_extract():
     try:
         customer_df = spark.read.json("json_files/cdw_sapp_custmer.json")
     except Exception as e:
-        print(f"Exception in credit_pandas_extract: {e}")
+        print(f"Exception: {e}")
         raise Exception(e)    
     return customer_df
 def credit_extract():
@@ -46,7 +46,7 @@ def credit_extract():
     try:
         credit_df = spark.read.json("json_files/cdw_sapp_credit.json")
     except Exception as e:
-        print(f"Exception in credit_pandas_extract: {e}")
+        print(f"Exception: {e}")
         raise Exception(e)    
     return credit_df
 def credit_pandas_extract():
@@ -56,7 +56,7 @@ def credit_pandas_extract():
     try:
         credit_df_pandas = pd.read_json("json_files/cdw_sapp_credit.json", lines=True)
     except Exception as e:
-        print(f"Exception in credit_pandas_extract: {e}")
+        print(f"Exception: {e}")
         raise Exception(e)    
     return credit_df_pandas
 
@@ -69,7 +69,7 @@ def loan_app():
         loan_api_list = requests.get(url).json()
         loan_df=spark.createDataFrame(loan_api_list)
     except Exception as e:
-        print(f"Exception in credit_pandas_extract: {e}")
+        print(f"Exception: {e}")
         raise Exception(e)    
     return loan_df
 
@@ -180,7 +180,7 @@ def branch_load(branch_transform_df):
             .option("useUnicode", "true") \
             .save()
         except Exception as e:
-            print(f"Exception in credit_pandas_extract: {e}")
+            print(f"Exception: {e}")
             raise Exception(e)    
 
 
@@ -199,7 +199,7 @@ def credit_load(credit_transform_df):
              .option("useUnicode", "true") \
              .save()
         except Exception as e:
-            print(f"Exception in credit_pandas_extract: {e}")
+            print(f"Exception: {e}")
             raise Exception(e)    
 
 def customer_load(customer_transform_df):
@@ -219,7 +219,7 @@ def customer_load(customer_transform_df):
              .option("useUnicode", "true") \
              .save()
         except Exception as e:
-            print(f"Exception in credit_pandas_extract: {e}")
+            print(f"Exception: {e}")
             raise Exception(e)    
 
 
@@ -237,7 +237,7 @@ def loan_load(loan_df):
         .option("useUnicode", "True") \
         .save()
     except Exception as e:
-        print(f"Exception in credit_pandas_extract: {e}")
+        print(f"Exception: {e}")
         raise Exception(e)    
     
 
@@ -253,7 +253,7 @@ def load_branch_from_db():
                                          dbtable="creditcard_capstone.CDW_SAPP_BRANCH").load()
         return branch_df
     except Exception as e:
-        print(f"Exception in credit_pandas_extract: {e}")
+        print(f"Exception: {e}")
         raise Exception(e)    
 
 
@@ -265,7 +265,7 @@ def load_credit_from_db():
                                          url="jdbc:mysql://localhost:3306/companyabc_db",\
                                          dbtable="creditcard_capstone.CDW_SAPP_CREDIT_CARD").load()
     except Exception as e:
-        print(f"Exception in credit_pandas_extract: {e}")
+        print(f"Exception: {e}")
         raise Exception(e)    
     return credit_df
 
@@ -278,7 +278,7 @@ def load_customer_from_db():
                                          url="jdbc:mysql://localhost:3306/companyabc_db",\
                                          dbtable="creditcard_capstone.CDW_SAPP_CUSTOMER").load()
     except Exception as e:
-        print(f"Exception in credit_pandas_extract: {e}")
+        print(f"Exception: {e}")
         raise Exception(e)    
     return customer_df
 
@@ -291,7 +291,7 @@ def load_loan_from_db():
                                          url="jdbc:mysql://localhost:3306/companyabc_db",\
                                          dbtable="creditcard_capstone.CDW_SAPP_loan_application").load()
     except Exception as e:
-        print(f"Exception in credit_pandas_extract: {e}")
+        print(f"Exception: {e}")
         raise Exception(e)    
     return loan_df
 
@@ -382,7 +382,7 @@ def validate_zip_code(zip_code):
     return bool(re.match(pattern, str(zip_code)))
 
 def validate_month(month):
-    return True if month.isnumeric() and int(month) in list(range(1,13))  and len(month) > 0 and  len(month) <3 else False
+    return True if month.isnumeric() and int(month) in list(range(1,13))  and len(month) > 0 and len(month) <3 else False
 
 def validate_year(year):
     return True if year.isnumeric() and int(year)==2018 else False
@@ -528,7 +528,7 @@ def update_customer(update_query_variable,user_update_input,credit_card_no_input
         con.commit()
         cur.close()
     except Exception as e:
-        print(f"Exception in credit_pandas_extract: {e}")
+        print(f"Exception: {e}")
         raise Exception(e)   
     finally: 
         con.close()
@@ -676,15 +676,25 @@ def transactions_by_dates():
         start_date_input = common_validator("\tEnter End Date in the format(YYYY-MM-DD): ", validate_date)
         end_date_input = common_validator("\tEnter End Date in the format(YYYY-MM-DD): ", validate_date)
 
+        start_date_input = start_date_input[0:4]+start_date_input[5:7]+start_date_input[8:10]
+        end_date_input = end_date_input[0:4]+end_date_input[5:7]+end_date_input[8:10]
+
         query = f"SELECT CONCAT(customer.FIRST_NAME,customer.LAST_NAME) as FULL_NAME, \
                 TRANSACTION_ID,BRANCH_CODE,TRANSACTION_TYPE,TRANSACTION_VALUE, \
-                TIMEID FROM creditview inner join customerview as customer on \
+                TIMEID FROM creditview as credit inner join customerview as customer on \
                 customer.CREDIT_CARD_NO = credit.CUST_CC_NO \
                 WHERE to_date(TIMEID, 'yyyyMMdd') >= '{start_date_input}' \
-                AND to_date(TIMEID, 'yyyyMMdd') <= '{end_date_input}' \
                 AND cust_cc_no = {credit_card_input} ORDER BY \
                 YEAR(to_date(TIMEID, 'yyyyMMdd')) DESC, MONTH(to_date(TIMEID, 'yyyyMMdd')) DESC, \
                 DAY(to_date(TIMEID, 'yyyyMMdd')) DESC"
+        # query1 = f"SELECT CONCAT(customer.FIRST_NAME,customer.LAST_NAME) as FULL_NAME, \
+        # credit.TRANSACTION_ID,credit.BRANCH_CODE,credit.TRANSACTION_TYPE,credit.TRANSACTION_VALUE, \
+        # credit.TIMEID FROM creditview as credit inner join customerview as customer on \
+        # customer.CREDIT_CARD_NO = credit.CUST_CC_NO \
+        # WHERE to_date(credit.TIMEID, 'yyyyMMdd') >= '{start_date_input}' \
+        # AND to_date(credit.TIMEID, 'yyyyMMdd') <= '{end_date_input}' \
+        # and credit.cust_cc_no = {credit_card_input}"
+        print(query)
         spark.sql(query).show()
 
 
@@ -1018,53 +1028,53 @@ def data_visualization_menu():
 
 
 if __name__ == "__main__":      
-    print(fontstyle.apply(" \t\t CAPSTONE PROJECT \n\n",'bold/UNDERLINE'))
+    # print(fontstyle.apply(" \t\t CAPSTONE PROJECT \n\n",'bold/UNDERLINE'))
 
-    print("\tCREDITCARD SYSTEM \n\n")
-    # Log that you have started the ETL process
-    print("\tETL Job Started \n")
+    # print("\tCREDITCARD SYSTEM \n\n")
+    # # Log that you have started the ETL process
+    # print("\tETL Job Started \n")
 
-    # Log that you have started the Extract step
-    print("\tExtract phase Started \n")
+    # # Log that you have started the Extract step
+    # print("\tExtract phase Started \n")
 
-    # Call the Extract function
-    extracted_customer_data = customer_extract()
-    extracted_branch_data = branch_extract()
-    extracted_credit_data = credit_pandas_extract()
+    # # Call the Extract function
+    # extracted_customer_data = customer_extract()
+    # extracted_branch_data = branch_extract()
+    # extracted_credit_data = credit_pandas_extract()
 
-    #xLog that you have completed the Extract step
-    print("\n\tExtract phase Ended")
+    # #xLog that you have completed the Extract step
+    # print("\n\tExtract phase Ended")
 
-    # Log that you have started the Transform step
-    print("\n\tTransform phase Started \n")
+    # # Log that you have started the Transform step
+    # print("\n\tTransform phase Started \n")
 
-    # Call the Transform function
-    customer_transformed_data = customer_transform(extracted_customer_data)
-    branch_transformed_data = branch_transform(extracted_branch_data)
-    credit_transformed_data = credit_transform(extracted_credit_data)
+    # # Call the Transform function
+    # customer_transformed_data = customer_transform(extracted_customer_data)
+    # branch_transformed_data = branch_transform(extracted_branch_data)
+    # credit_transformed_data = credit_transform(extracted_credit_data)
 
-    # Log that you have completed the Transform step
-    print("\tTransform phase Ended \n")
+    # # Log that you have completed the Transform step
+    # print("\tTransform phase Ended \n")
 
-    # Log that you have started the Load step
-    print("\tLoad phase Started \n")
+    # # Log that you have started the Load step
+    # print("\tLoad phase Started \n")
 
-    # Call the Load function
-    customer_load(customer_transformed_data)
-    branch_load(branch_transformed_data)
-    credit_load(credit_transformed_data)
+    # # Call the Load function
+    # customer_load(customer_transformed_data)
+    # branch_load(branch_transformed_data)
+    # credit_load(credit_transformed_data)
 
 
-    # Log that you have completed the Load step
-    print("\n\tLoad phase Ended \n")
+    # # Log that you have completed the Load step
+    # print("\n\tLoad phase Ended \n")
 
-    # Log that you have completed the ETL process
-    print("\tETL Job Ended \n")
+    # # Log that you have completed the ETL process
+    # print("\tETL Job Ended \n")
 
-    #loan-api-module
-    print ("\n\tLOAN application Data API")
-    loan_df= loan_app()
-    loan_load(loan_df)
+    # #loan-api-module
+    # print ("\n\tLOAN application Data API")
+    # loan_df= loan_app()
+    # loan_load(loan_df)
 
     main_menu()
 
